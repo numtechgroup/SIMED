@@ -10,7 +10,7 @@ exports.registerValidation = [
 
 exports.loginValidation = [
     check("email", "votre email est requis").not().isEmpty(),
-    check("password", "Pvotre mot de passe est requis").not().isEmpty(),
+    check("password", "votre mot de passe est requis").not().isEmpty(),
   ];
 
 
