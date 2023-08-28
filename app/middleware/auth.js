@@ -9,8 +9,8 @@ exports.registerValidation = [
 ];
 
 exports.loginValidation = [
-    check("email", "Email is required").not().isEmpty(),
-    check("password", "Password is required").not().isEmpty(),
+    check("email", "votre email est requis").not().isEmpty(),
+    check("password", "Pvotre mot de passe est requis").not().isEmpty(),
   ];
 
 
@@ -38,6 +38,6 @@ exports.auth = async(req, res, next) => {
         next();
     } catch (err) {
         console.error(err.message);
-        res.status(401).json(error("Non authorizé !", res.statusCode));
+        res.status(401).json(error("Non authorisé !", res.statusCode));
     }
 };
