@@ -1,17 +1,41 @@
 const mongoose = require('mongoose');
 
-const userschema = new mongoose.Schema({
-    prenom : {
+const doctorschema = new mongoose.Schema({
+    prenom_nom : {
         type: 'String',
         default: null,
         required: true,
         maxlength: 255,
     },
-    nom : {
+    genre : {
         type: 'String',
-        default: null,
+        enum:['Masculin','Feminin'],
+    },
+    addresse : {
+        type: 'String',
         required: true,
-        maxlength: 255,
+        minlength: 5,
+        maxlength: 255, 
+    },
+    telephone : {
+        type: 'String',
+        required: true,
+        minlength: 5,
+        maxlength: 255, 
+    },
+    speciality : {
+        type: 'String',
+        enum: ['Ophtalmologie',
+        'Pneumologie',
+        'Neurologie',
+        'Pediatrie',
+        'Generaliste'] 
+    },
+    hopital : {
+        type: 'String',
+        required: true,
+        minlength: 5,
+        maxlength: 255, 
     },
     email : {
         type: 'String',
@@ -26,10 +50,7 @@ const userschema = new mongoose.Schema({
         minlength: 5,
         maxlength: 255,
     },
-    role : {
-        type: 'String',
-        enum: ['patient', 'doctor','secretaire']
-    },
+    
     token : {
         type: 'String'
     },
@@ -46,4 +67,4 @@ const userschema = new mongoose.Schema({
     },
 });
 
-module.exports = mongoose.model('user', userschema);
+module.exports = mongoose.model('Doctor', doctorschema);

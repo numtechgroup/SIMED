@@ -1,4 +1,3 @@
-
 exports.randomString = (length) => {
     let result = "";
     let characters =

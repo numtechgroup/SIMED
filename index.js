@@ -1,11 +1,13 @@
 const express = require('express');
 const app = express();
 const connectToMongo = require('./config/database');
+const cors = require("cors");
+
 
 const { API_PORT } = process.env
 
 app.use(express.json({ extended: false }));
-
+app.use(cors());
 connectToMongo();
 
 app.use("/api/auth", require("./routes/api/auth"));
