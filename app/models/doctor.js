@@ -23,13 +23,8 @@ const doctorschema = new mongoose.Schema({
         minlength: 5,
         maxlength: 255, 
     },
-    speciality : {
+    specialite : {
         type: 'String',
-        enum: ['Ophtalmologie',
-        'Pneumologie',
-        'Neurologie',
-        'Pediatrie',
-        'Generaliste'] 
     },
     hopital : {
         type: 'String',
@@ -50,7 +45,10 @@ const doctorschema = new mongoose.Schema({
         minlength: 5,
         maxlength: 255,
     },
-    
+    role : {
+        type: 'String',
+        default: 'doctor',
+    },
     token : {
         type: 'String'
     },

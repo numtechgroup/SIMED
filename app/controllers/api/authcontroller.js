@@ -5,8 +5,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/user');
 const Doctor = require('../../models/doctor');
-const config = require('config');
-const doctor = require('../../models/doctor');
+const Patient = require('../../models/patient');
+
 
 exports.register = async(req, res) => {
     const errors = validationResult(req);
@@ -69,7 +69,7 @@ exports.registerDoctor = async(req, res) => {
       if (user) {
           return res.status(422).json(validation({msg: "Cet email existe déjà, veuillez vous connecter !"}));
       }
-      let newDoctor = new doctor({
+      let newDoctor = new Doctor({
           prenom_nom, 
           genre,
           addresse,
@@ -87,7 +87,7 @@ exports.registerDoctor = async(req, res) => {
           success(
               "Ajout reussie, Veuillez vous connecter !",
               {
-                  user : {
+                  Doctor : {
                       id: newDoctor._id,
                       prenom_nom : newDoctor.prenom_nom,
                       genre : newDoctor.genre,
@@ -107,6 +107,61 @@ exports.registerDoctor = async(req, res) => {
       res.status(500).json(error("Erreur interne serveur", res.statusCode));
   }
 };
+
+exports.registerUser = async(req, res) => {
+  const errors = validationResult(req);
+  if(!errors.isEmpty())
+      return res.status(422).json(validation(errors.array()));
+
+
+  const { prenom,nom,genre,adresse,telephone,role,email,password } = req.body;
+
+  try {
+      let user = await User.findOne({ email: email.toLowerCase() });
+
+      if (user) {
+          return res.status(422).json(validation({msg: "Cet email existe déjà, veuillez vous connecter !"}));
+      }
+      let newUser = new User({
+          prenom,
+          nom, 
+          genre,
+          adresse,
+          telephone,
+          role,
+          email: email.toLowerCase().replace(/\s+/, ""),
+          password,
+      });
+      const hash = await bcrypt.genSalt(10);
+      newUser.password = await bcrypt.hash(password, hash);
+
+      await newUser.save();
+      res.status(201).json(
+          success(
+              "Ajout reussie, Veuillez vous connecter !",
+              {
+                  User : {
+                      id: newUser._id,
+                      prenom : newUser.prenom,
+                      nom : newUser.nom,
+                      genre : newUser.genre,
+                      adresse : newUser.adresse,
+                      telephone : newUser.telephone,
+                      role: newUser.role,
+                      email: newUser.email,
+                      createdAt: newUser.createdAt,
+                  },
+              },
+              res.statusCode
+          )
+      );
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).json(error("Erreur interne serveur", res.statusCode));
+  }
+};
+
+
 
 
 // exports.verify = async (req, res) => {
@@ -186,7 +241,7 @@ exports.registerDoctor = async(req, res) => {
   
       jwt.sign(
         payload,
-        config.get("jwtSecret"),
+        process.env.jwtSecret,
         { expiresIn: 100 },
         (err, token) => {
           if (err) throw err;
@@ -235,9 +290,9 @@ exports.registerDoctor = async(req, res) => {
   
       jwt.sign(
         payload,
-        config.get("jwtSecret"),
+        process.env.jwtSecret,
         { expiresIn: 100 },
-        (err, token) => {
+        (err, token) => { 
           if (err) throw err;
           res
             .status(200)
