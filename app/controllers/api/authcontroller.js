@@ -1,11 +1,15 @@
 const {success, error, validation } = require('../../helpers/responseApi');
 require('../../helpers/common');
 const { validationResult } = require('express-validator');
+const { randomString } = require("../../helpers/common");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/user');
 const Doctor = require('../../models/doctor');
+const config = require("config");
 const Patient = require('../../models/patient');
+const Verification = require("../../models/verificationModel");
+
 
 
 exports.register = async(req, res) => {
@@ -136,6 +140,12 @@ exports.registerUser = async(req, res) => {
       newUser.password = await bcrypt.hash(password, hash);
 
       await newUser.save();
+
+      let verification = new Verification({
+        token: randomString(50),
+        userId: newUser._id,
+        type: "Register New Account",
+      });
       res.status(201).json(
           success(
               "Ajout reussie, Veuillez vous connecter !",
@@ -151,6 +161,7 @@ exports.registerUser = async(req, res) => {
                       email: newUser.email,
                       createdAt: newUser.createdAt,
                   },
+                  verification,
               },
               res.statusCode
           )
@@ -164,46 +175,46 @@ exports.registerUser = async(req, res) => {
 
 
 
-// exports.verify = async (req, res) => {
-//     const { token } = req.params;
+exports.verify = async (req, res) => {
+    const { token } = req.params;
   
-//     try {
-//       let verification = await Verification.findOne({
-//         token,
-//         type: "Nouveau compte",
-//       });
+    try {
+      let verification = await Verification.findOne({
+        token,
+        type: "Nouveau compte",
+      });
   
-//       if (!verification)
-//         return res
-//           .status(404)
-//           .json(error("Compte non verifié", res.statusCode));
+      if (!verification)
+        return res
+          .status(404)
+          .json(error("Compte non verifié", res.statusCode));
   
-//       let user = await User.findOne({ _id: verification.userId }).select(
-//         "-password"
-//       );
-//       user = await User.findByIdAndUpdate(user._id, {
-//         $set: {
-//           verified: true,
-//           verifiedAt: new Date(),
-//         },
-//       });
+      let user = await User.findOne({ _id: verification.userId }).select(
+        "-password"
+      );
+      user = await User.findByIdAndUpdate(user._id, {
+        $set: {
+          verified: true,
+          verifiedAt: new Date(),
+        },
+      });
   
-//       verification = await Verification.findByIdAndRemove(verification._id);
+      verification = await Verification.findByIdAndRemove(verification._id);
   
-//       res
-//         .status(200)
-//         .json(
-//           success(
-//             "Verification réussie !",
-//             null,
-//             res.statusCode
-//           )
-//         );
-//     } catch (err) {
-//       console.log(err);
-//       res.status(500).json(error("Erreur interne serveur", res.statusCode));
-//     }
-//   };
+      res
+        .status(200)
+        .json(
+          success(
+            "Verification réussie !",
+            null,
+            res.statusCode
+          )
+        );
+    } catch (err) {
+      console.log(err);
+      res.status(500).json(error("Erreur interne serveur", res.statusCode));
+    }
+  };
 
 
 
@@ -226,10 +237,10 @@ exports.registerUser = async(req, res) => {
       if (!checkPassword)
         return res.status(422).json(validation("Mot de passe incorrect !"));
   
-      // if (user && !user.verified)
-      //   return res
-      //     .status(400)
-      //     .json(error("Votre compte n'est pas encore activé", res.statusCode));
+      if (user && !user.verified)
+        return res
+          .status(400)
+          .json(error("Votre compte n'est pas encore activé", res.statusCode));
   
       const payload = {
         user: {
@@ -241,8 +252,8 @@ exports.registerUser = async(req, res) => {
   
       jwt.sign(
         payload,
-        process.env.jwtSecret,
-        { expiresIn: 100 },
+        config.get("jwtSecret"),
+        { expiresIn: 3600 },
         (err, token) => {
           if (err) throw err;
           res
@@ -305,50 +316,50 @@ exports.registerUser = async(req, res) => {
     }
   };
   
-  // exports.resendVerification = async(req, res) => {
-  //   const { email } = req.body;
+  exports.resendVerification = async(req, res) => {
+    const { email } = req.body;
 
-  // if (!email)
-  //   return res.status(422).json(validation([{ msg: "Veuillez entrez votre email svp !" }]));
+  if (!email)
+    return res.status(422).json(validation([{ msg: "Veuillez entrez votre email svp !" }]));
 
-  // try {
-  //   const user = await User.findOne({ email: email.toLowerCase() });
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() });
 
-  //   if (!user)
-  //     return res.status(404).json(error("Email inexistant, inscrivez vous svp !", res.statusCode));
+    if (!user)
+      return res.status(404).json(error("Email inexistant, inscrivez vous svp !", res.statusCode));
 
-  //   let verification = await Verification.findOne({
-  //     userId: user._id,
-  //     type: "Nouveau compte",
-  //   });
+    let verification = await Verification.findOne({
+      userId: user._id,
+      type: "Nouveau compte",
+    });
 
  
-  //   if (verification) {
-  //     verification = await Verification.findByIdAndRemove(verification._id);
-  //   }
+    if (verification) {
+      verification = await Verification.findByIdAndRemove(verification._id);
+    }
 
-  //   let newVerification = new Verification({
-  //     token: randomString(50),
-  //     userId: user._id,
-  //     type: "Nouveau compte",
-  //   });
+    let newVerification = new Verification({
+      token: randomString(50),
+      userId: user._id,
+      type: "Nouveau compte",
+    });
 
-  //   await newVerification.save();
+    await newVerification.save();
 
-  //   res
-  //     .status(201)
-  //     .json(
-  //       success(
-  //         "La vérification a bien été envoyée !",
-  //         { verification: newVerification },
-  //         res.statusCode
-  //       )
-  //     );
-  // } catch (err) {
-  //   console.error(err.message);
-  //   res.status(500).json(error("Erreur interne serveur", res.statusCode));
-  // }
-  // };
+    res
+      .status(201)
+      .json(
+        success(
+          "La vérification a bien été envoyée !",
+          { verification: newVerification },
+          res.statusCode
+        )
+      );
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json(error("Erreur interne serveur", res.statusCode));
+  }
+  };
 
   exports.getAuthenticatedUser = async (req, res) => {
     try {

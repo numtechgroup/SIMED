@@ -15,7 +15,7 @@ app.use("/api/auth", require("./routes/api/auth"));
 app.use("/api/password", require("./routes/api/forgotPassword"));
 
 app.use("/api", require("./routes/api/routes"));
-
+  
 
 app.listen(API_PORT, () => {
   console.log(`Server running on port ${API_PORT}`);
