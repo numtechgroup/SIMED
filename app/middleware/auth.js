@@ -16,11 +16,19 @@ exports.loginValidation = [
 
 exports.auth = async(req, res, next) => {
     const authorizedHeader = req.header("Authorization");
+    var splitAuthorizationHeader;
+    var bearer;
+    var token;
 
-    const splitAuthorizationHeader = authorizedHeader.split(" ");
+    if (authorizedHeader)
+        splitAuthorizationHeader = authorizedHeader.split(" ");
 
-    const bearer = splitAuthorizationHeader[0];
-    const token = splitAuthorizationHeader[1];
+    if (splitAuthorizationHeader){
+        bearer = splitAuthorizationHeader[0];
+        token = splitAuthorizationHeader[1];
+    }
+
+    
 
     if(bearer !== "Bearer")
         return res.status(400).json(error("Le type de token doit etre Bearer !", res.statusCode));

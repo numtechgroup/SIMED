@@ -126,29 +126,58 @@ exports.registerUser = async(req, res) => {
       if (user) {
           return res.status(422).json(validation({msg: "Cet email existe déjà, veuillez vous connecter !"}));
       }
-      let newUser = new User({
-          prenom,
-          nom, 
-          genre,
-          adresse,
-          telephone,
-          role,
-          email: email.toLowerCase().replace(/\s+/, ""),
-          password,
-      });
+      let newUser;
+      if (role == 'admin') {
+           newUser = new User({
+                prenom,
+                nom,
+                genre,
+                adresse,
+                telephone,
+                role,
+                email: email.toLowerCase().replace(/\s+/, ""),
+                password,
+            });
+      }else if (role == 'docteur'){
+        newUser = new User({
+                prenom,
+                nom,
+                genre,
+                adresse,
+                telephone,
+                role,
+                email: email.toLowerCase().replace(/\s+/, ""),
+                password,
+            });
+          const doctorData = { userId: newUser._id };
+          await Doctor.create(doctorData);
+      }else{
+        newUser = new User({
+                prenom,
+                nom,
+                genre,
+                adresse,
+                telephone,
+                role,
+                email: email.toLowerCase().replace(/\s+/, ""),
+                password,
+            });
+          const patientData = { userId: newUser._id };
+          await Patient.create(patientData);
+      }
       const hash = await bcrypt.genSalt(10);
       newUser.password = await bcrypt.hash(password, hash);
 
       await newUser.save();
 
-      let verification = new Verification({
-        token: randomString(50),
-        userId: newUser._id,
-        type: "Register New Account",
-      });
+      // let verification = new Verification({
+      //   token: randomString(50),
+      //   userId: newUser._id,
+      //   type: "Creating New Account" ,
+      // });
       res.status(201).json(
           success(
-              "Ajout reussie, Veuillez vous connecter !",
+              "Ajout réussi, Veuillez activer votre compte et vous connecter !",
               {
                   User : {
                       id: newUser._id,
@@ -161,7 +190,6 @@ exports.registerUser = async(req, res) => {
                       email: newUser.email,
                       createdAt: newUser.createdAt,
                   },
-                  verification,
               },
               res.statusCode
           )
@@ -174,14 +202,13 @@ exports.registerUser = async(req, res) => {
 
 
 
-
 exports.verify = async (req, res) => {
     const { token } = req.params;
   
     try {
       let verification = await Verification.findOne({
         token,
-        type: "Nouveau compte",
+        type: "Creating New Account",
       });
   
       if (!verification)
@@ -237,16 +264,17 @@ exports.verify = async (req, res) => {
       if (!checkPassword)
         return res.status(422).json(validation("Mot de passe incorrect !"));
   
-      if (user && !user.verified)
-        return res
-          .status(400)
-          .json(error("Votre compte n'est pas encore activé", res.statusCode));
+      // if (user && !user.verified)
+      //   return res
+      //     .status(400)
+      //     .json(error("Votre compte n'est pas encore activé", res.statusCode));
   
       const payload = {
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role
         },
       };
   
@@ -258,7 +286,7 @@ exports.verify = async (req, res) => {
           if (err) throw err;
           res
             .status(200)
-            .json(success("Connexion Réussie", { token }, res.statusCode));
+            .json(success("Connexion Réussie", { user,token }, res.statusCode));
         }
       );
     } catch (err) {
@@ -330,7 +358,7 @@ exports.verify = async (req, res) => {
 
     let verification = await Verification.findOne({
       userId: user._id,
-      type: "Nouveau compte",
+      type: "Creating New Account",
     });
 
  
@@ -341,7 +369,7 @@ exports.verify = async (req, res) => {
     let newVerification = new Verification({
       token: randomString(50),
       userId: user._id,
-      type: "Nouveau compte",
+      type: "Creating New Account",
     });
 
     await newVerification.save();
@@ -378,12 +406,14 @@ exports.verify = async (req, res) => {
   };
 
   exports.logout = async(req,res) => {
-    try {
-      const user = await User.findById(req.user.id);
-      if (!user)
-        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
-      
-    } catch (error) {
-      
-    }
+    const cookieOptions = {
+    expires: new Date(new Date(Date.now() + 10 * 1000)),
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true,
+  };
+
+  res.cookie('jwt', 'loggedout', cookieOptions);
+
+  res.status(200).json({ status: 'success' });
   };

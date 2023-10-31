@@ -9,10 +9,19 @@ const Doctor = require('../../models/doctor');
 
 exports.getDoctors = async(req, res) => {
     try{
-        let users = await Doctor.find({});
-        if (users){
-            return res.status(200).json(users);
+        const user = await User.findById(req.user.id).select("-password");
+  
+      if (!user)
+        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
+      else{
+        if(user.role != "patient"){
+            return res.status(403).json(error("Accès non autorisé", res.statusCode));
+        }else{
+            let doctors = await Doctor.find({});
+            return res.status(200).json(doctors);
         }
+    }
+        
     }catch (err) {
       console.error(err.message);
       res.status(500).json(error("Erreur serveur interne", res.statusCode));
