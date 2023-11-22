@@ -121,54 +121,55 @@ exports.registerUser = async(req, res) => {
   const { prenom,nom,genre,adresse,telephone,role,email,password } = req.body;
 
   try {
-      let user = await User.findOne({ email: email.toLowerCase() });
+      let user = await User.findOne({ email: email });
 
       if (user) {
           return res.status(422).json(validation({msg: "Cet email existe déjà, veuillez vous connecter !"}));
       }
-      let newUser;
-      if (role == 'admin') {
-           newUser = new User({
-                prenom,
-                nom,
-                genre,
-                adresse,
-                telephone,
-                role,
-                email: email.toLowerCase().replace(/\s+/, ""),
-                password,
-            });
-      }else if (role == 'docteur'){
-        newUser = new User({
-                prenom,
-                nom,
-                genre,
-                adresse,
-                telephone,
-                role,
-                email: email.toLowerCase().replace(/\s+/, ""),
-                password,
-            });
-          const doctorData = { userId: newUser._id };
-          await Doctor.create(doctorData);
-      }else{
-        newUser = new User({
-                prenom,
-                nom,
-                genre,
-                adresse,
-                telephone,
-                role,
-                email: email.toLowerCase().replace(/\s+/, ""),
-                password,
-            });
-          const patientData = { userId: newUser._id };
-          await Patient.create(patientData);
-      }
+
+      // if(password != new_password){
+      //   return res.status(422).json(validation({msg: "Les mots de passe ne correspondent pas !"}));
+      // }
+      
+      let newUser = new User({
+        prenom,
+        nom,
+        genre,
+        adresse,
+        telephone,
+        role,
+        email,
+        password
+    });
       const hash = await bcrypt.genSalt(10);
       newUser.password = await bcrypt.hash(password, hash);
-
       await newUser.save();
+      if (role == 'docteur') {
+           newUser = new Doctor({
+            prenom: newUser.prenom,
+            nom: newUser.nom,
+            genre: newUser.genre,
+            adresse: newUser.adresse,
+            telephone : newUser.telephone,
+            role: newUser.role,
+            email: newUser.email,
+            password: newUser.password
+      });
+      await newUser.save();
+      }else if (role == 'patient'){
+        newUser = new Patient({
+            prenom: newUser.prenom,
+            nom: newUser.nom,
+            genre: newUser.genre,
+            adresse: newUser.adresse,
+            telephone : newUser.telephone,
+            role: newUser.role,
+            email: newUser.email,
+            password: newUser.password
+      });
+          await newUser.save();
+      }
+      
 
       // let verification = new Verification({
       //   token: randomString(50),

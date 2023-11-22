@@ -8,7 +8,7 @@ const { registerValidation, loginValidation, auth } = require("../../app/middlew
 
 // router.post("/loginDoctor", loginValidation, loginDoctor);
 
-router.post("/addUser", registerValidation, registerUser);
+router.post("/addUser", registerUser);
 
 router.get("/verify/:token", verify);
 

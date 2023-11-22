@@ -35,6 +35,12 @@ const userschema = new mongoose.Schema({
         unique: true,
         minlength: 5,
         maxlength: 255,
+        validate: {
+            validator: function (v) {
+                return v !== null;
+            },
+            message: 'Email is required and cannot be null.',
+        },
     },
     password : {
         type: 'String',
@@ -42,6 +48,12 @@ const userschema = new mongoose.Schema({
         minlength: 5,
         maxlength: 255,
     },
+    // new_password : {
+    //     type: 'String',
+    //     required: true,
+    //     minlength: 5,
+    //     maxlength: 255,
+    // },
     role : {
         type: 'String',
         enum: ['patient', 'docteur','admin']
