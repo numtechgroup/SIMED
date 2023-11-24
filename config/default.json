@@ -1,3 +1,7 @@
 {
-    "jwtSecret": "HelloWeAreATeamAtSenegaLEADINDEV221"
- }
+    "emailUsername": "ibousow311@gmail.com",
+    "emailPassword":"mype xtcn zuen isie",
+    "frontendUrl":"http://localhost:4200",
+    "jwtSecret": "HelloWeAreATeamAtSenegaLEADINDEV221",
+    "jwtResetSecret": "PasswordResetWithAGoodDeaal"
+}

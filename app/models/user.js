@@ -48,12 +48,12 @@ const userschema = new mongoose.Schema({
         minlength: 5,
         maxlength: 255,
     },
-    // new_password : {
-    //     type: 'String',
-    //     required: true,
-    //     minlength: 5,
-    //     maxlength: 255,
-    // },
+    new_password : {
+        type: 'String',
+        required: true,
+        minlength: 5,
+        maxlength: 255,
+    },
     role : {
         type: 'String',
         enum: ['patient', 'docteur','admin']

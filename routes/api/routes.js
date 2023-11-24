@@ -2,12 +2,12 @@ const router = require("express").Router();
 const { getDoctors } = require("../../app/controllers/api/DoctorController");
 const { getPatients } = require("../../app/controllers/api/PatientController");
 const { getUsers } = require("../../app/controllers/api/UserController");
-const { auth } = require("../../app/middleware/auth")
+const {authAdmin, authDoctor, authPatient } = require("../../app/middleware/auth")
 
-router.get('/doctors',auth,getDoctors);
+router.get('/doctors',authPatient,getDoctors);
 
-router.get('/patients',auth, getPatients);
+router.get('/patients',authDoctor, getPatients);
 
-router.get('/users',auth, getUsers);
+router.get('/users',authAdmin, getUsers);
 
 module.exports = router;

@@ -1,78 +1,54 @@
 const bcrypt = require("bcryptjs");
 const { success, error, validation } = require("../../helpers/responseApi");
-const { randomString } = require("../../helpers/common");
 const User = require("../../models/user");
-const Verification = require("../../models/verificationModel");
+const { sendPasswordResetEmail } = require("../../helpers/sendPasswordResetEmail");
+const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const config = require("config");
+
+
 
 exports.forgot = async (req, res) => {
+  const errors = validationResult(req);
+    if(!errors.isEmpty())
+        return res.status(422).json(validation(errors.array()));
 
-  const { email } = req.body;
+      const {email } = req.body;
 
-  if (!email)
-    return res.status(422).json(validation([{ msg: "Votre email est requis !" }]));
+      if (!email) return res.status( 404 ).json(validation({msg: "Veuillez fournir un email svp !"}));
 
-  try {
-    const user = await User.findOne({ email: email.toLowerCase() });
+      try {
+        const user = await User.findOne({ email });
 
-    if (!user)
-      return res.status(404).json(error("Pas d'utilisateur trouvé !", res.statusCode));
+        if (!user) {
+            return res.status(404).json(validation({ msg: "Utilisateur non trouvé." }));
+        }
 
-    let verification = await Verification.findOne({
-      userId: user._id,
-      type: "Mot de passe oublié"
-    });
+        const token = jwt.sign({ email }, config.get("jwtSecret"), { expiresIn: "1h" });
 
-    
-    if (verification) {
-      verification = await Verification.findByIdAndRemove(verification._id);
-    }
+        // Send the reset link to the user's email
+        const resetLink = `${config.get("frontendUrl")}/reset-password?token=${token}`;
+        await sendPasswordResetEmail(user.email, resetLink);
 
-    let newVerification = new Verification({
-      token: randomString(50),
-      userId: user._id,
-      type: "Mot de passe oublié"
-    });
-
-    await newVerification.save();
-
-    res
-      .status(201)
-      .json(
-        success(
-          "Verification mot de passe oublié envoyée !",
-          { verification: newVerification },
-          res.statusCode
-        )
-      );
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json(error("Erreur Serveur Interne", res.statusCode));
-  }
+        return res.status(200).json(success("Un lien de réinitialisation de mot de passe a été envoyé à votre adresse e-mail."));
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json(error("Erreur interne serveur", res.statusCode));
+      }
 };
 
 exports.reset = async(req,res) => {
-    const {token , password } = req.body;
-
-    if (!token)
-    return res.status(422).json(validation([{ msg: "Le token est requis !" }]));
+    const {email, password , new_password } = req.body;
 
   if (!password)
     return res.status(422).json(validation([{ msg: "Le mot de passe est requis !" }]));
 
+  if (!new_password) return res.status(422).json(validation([{ msg: "Le mot de passe est requis !" }]));
+
+  if(password != new_password) return res.status(422).json(error([{ msg: "Les mots de passe ne correspondent pas " }]));
   try {
-    let verification = await Verification.findOne({
-      token,
-      type: "Mot de passe oublié"
-    });
 
-    if (!verification)
-      return res
-        .status(400)
-        .json(
-          error("Les informations que vous avez entrés sont incorrectes !", res.statusCode)
-        );
-
-    let user = await User.findById(verification.userId);
+    let user = await User.findOne({email});
 
     if (!user)
       return res.status(404).json(error("Utilisateur inexistant", res.statusCode));
@@ -80,13 +56,9 @@ exports.reset = async(req,res) => {
     let hash = await bcrypt.genSalt(10);
     let hashedPassword = await bcrypt.hash(password, hash);
 
-    // Finnaly, update the user password
     user = await User.findByIdAndUpdate(user._id, {
       password: hashedPassword
     });
-
-    verification = await Verification.findByIdAndRemove(verification._id);
-
     res
       .status(200)
       .json(success("Mot de passe réinitialisé avec succès !", null, res.statusCode));

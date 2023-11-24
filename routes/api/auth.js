@@ -1,26 +1,18 @@
 const router = require("express").Router();
-const { resendVerification, login, getAuthenticatedUser, logout, verify, registerUser, loginDoctor } = require("../../app/controllers/api/authcontroller");
-const { registerValidation, loginValidation, auth } = require("../../app/middleware/auth");
+const { resendVerification, login, getAuthenticatedUser, verify, registerUser } = require("../../app/controllers/api/authcontroller");
+const { loginValidation, authAdmin, authDoctor, authPatient } = require("../../app/middleware/auth");
 
-// router.post("/register", registerValidation, register);
-
-// router.post("/addDoctor", registerValidation, registerDoctor);
-
-// router.post("/loginDoctor", loginValidation, loginDoctor);
-
-router.post("/addUser", registerUser);
+router.post("/addUser", authAdmin, registerUser);
 
 router.get("/verify/:token", verify);
 
 router.post("/login", loginValidation, login);
 
-router.get('/logout', logout);
-
 router.post("/verify/resend", resendVerification);
 
-router.get("/", auth, getAuthenticatedUser);
+router.get("/", authAdmin, getAuthenticatedUser);
 
-router.get("/users", auth, getAuthenticatedUser);
+router.get("/users", authAdmin, getAuthenticatedUser);
 
 
 
