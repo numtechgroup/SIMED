@@ -50,7 +50,7 @@ const userschema = new mongoose.Schema({
     },
     new_password : {
         type: 'String',
-        required: true,
+        required: false,
         minlength: 5,
         maxlength: 255,
     },
@@ -60,6 +60,10 @@ const userschema = new mongoose.Schema({
     },
     token : {
         type: 'String'
+    },
+    verificationCode:{
+        type: 'String',
+        required: false,
     },
     verified: {
         type: Boolean,

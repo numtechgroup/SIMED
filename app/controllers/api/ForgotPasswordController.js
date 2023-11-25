@@ -5,65 +5,93 @@ const { sendPasswordResetEmail } = require("../../helpers/sendPasswordResetEmail
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const config = require("config");
+const crypto = require('crypto');
 
 
+var tokenpassword;
+var verificationCode;
 
 exports.forgot = async (req, res) => {
   const errors = validationResult(req);
     if(!errors.isEmpty())
         return res.status(422).json(validation(errors.array()));
 
-      const {email } = req.body;
-
-      if (!email) return res.status( 404 ).json(validation({msg: "Veuillez fournir un email svp !"}));
+      const { email } = req.body;
 
       try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: email });
+
+        if (!email) return res.status( 404 ).json(validation({msg: "Veuillez fournir un email svp !"}));
 
         if (!user) {
             return res.status(404).json(validation({ msg: "Utilisateur non trouvé." }));
         }
+        verificationCode = crypto.randomBytes(7).toString('hex').toUpperCase();
 
-        const token = jwt.sign({ email }, config.get("jwtSecret"), { expiresIn: "1h" });
+        user.verificationCode = verificationCode;
+        await user.save();
+        console.log('user code',user.verificationCode);
 
-        // Send the reset link to the user's email
-        const resetLink = `${config.get("frontendUrl")}/reset-password?token=${token}`;
-        await sendPasswordResetEmail(user.email, resetLink);
+        tokenpassword = jwt.sign({ email, verificationCode  }, config.get("jwtSecret"), { expiresIn: "1h" });
 
-        return res.status(200).json(success("Un lien de réinitialisation de mot de passe a été envoyé à votre adresse e-mail."));
+
+        console.log(verificationCode);
+
+        const resetLink = `${config.get("frontendUrl")}/#/reset-password?token=${tokenpassword}`;
+        await sendPasswordResetEmail(user.email, resetLink, verificationCode);
+
+        return res.status(200).json(success("Un lien de réinitialisation de mot de passe a été envoyé à votre adresse e-mail.", tokenpassword, verificationCode));
     } catch (err) {
-        console.error(err.message);
+        console.error(err.message); 
         res.status(500).json(error("Erreur interne serveur", res.statusCode));
       }
 };
 
-exports.reset = async(req,res) => {
-    const {email, password , new_password } = req.body;
+exports.reset = async (req, res) => {
 
-  if (!password)
-    return res.status(422).json(validation([{ msg: "Le mot de passe est requis !" }]));
+  const { verificationCode, new_password } = req.body;
 
-  if (!new_password) return res.status(422).json(validation([{ msg: "Le mot de passe est requis !" }]));
+  if (!verificationCode || !new_password) {
+    return res
+      .status(422)
+      .json(validation([{ msg: "Le code de vérification et le nouveau mot de passe sont requis !" }]));
+  }
 
-  if(password != new_password) return res.status(422).json(error([{ msg: "Les mots de passe ne correspondent pas " }]));
   try {
 
-    let user = await User.findOne({email});
+    const decoded = jwt.verify(tokenpassword, config.get("jwtSecret"));
+    console.log('decoded',JSON.stringify(decoded.email));
 
-    if (!user)
+    if (!decoded) { 
       return res.status(404).json(error("Utilisateur inexistant", res.statusCode));
+    }
 
-    let hash = await bcrypt.genSalt(10);
-    let hashedPassword = await bcrypt.hash(password, hash);
+    const user = await User.findOne({ email: decoded.email });
+    console.log(user);
 
-    user = await User.findByIdAndUpdate(user._id, {
-      password: hashedPassword
-    });
-    res
+    if (!user) {
+      return res.status(400).json(validation({ msg: "Code de vérification invalide." }));
+    }
+
+    if (user.verificationCode !== verificationCode) {
+      return res.status(400).json(validation({ msg: "Les codes ne correspondent pas, verifier votre mail" }));
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(new_password, salt);
+
+    user.password = hashedPassword;
+    user.verificationCode = null;
+    await user.save();
+
+    return res
       .status(200)
-      .json(success("Mot de passe réinitialisé avec succès !", null, res.statusCode));
+      .json(success("Mot de passe réinitialisé avec succès !", null, res.statusCode, user.token));
   } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json(error("Token invalide ou expiré", res.statusCode));
+    }
     console.error(err.message);
-    res.status(500).json(error("Erreur Serveur interne", res.statusCode));
+    return res.status(500).json(error("Erreur Serveur interne", res.statusCode));
   }
 };

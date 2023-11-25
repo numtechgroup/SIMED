@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const config = require('config');
 
-const sendPasswordResetEmail = async (email, resetLink) => {
+const sendPasswordResetEmail = async (email, resetLink, code) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -18,6 +18,7 @@ const sendPasswordResetEmail = async (email, resetLink) => {
             <p>Hello,</p>
             <p>You've requested a password reset. Click the link below to reset your password:</p>
             <a href="${resetLink}">Reset Password</a>
+            <p>Please fill the code ${code} in the form and create a new password</p>
             <p>If you didn't request this, please ignore this email.</p>
         `,
     };
