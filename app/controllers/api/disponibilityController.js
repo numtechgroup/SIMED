@@ -11,12 +11,21 @@ exports.createDisponibility = async(req, res) =>{
     if(!errors.isEmpty())
       return res.status(422).json(validation(errors.array()));
     const { date, timeslotes } = req.body;  
+
+    const existDate = await Disponibility.findOne({date: date});
+
+    if(existDate)
+      return res.status(422).json(validation({message:"Vous avez deja programmé pour ce jour, choisissez une autre !"}));
+
     if(!date || !timeslotes[0].start || !timeslotes[0].end)
         return res.status(422).json(validation({message:"Date and/or time are required"}));
+
     if(timeslotes[0].start > timeslotes[0].end)
         return res.status(422).json(validation({message:"Le temps de fin consultation ne peut etre avant celui de debut"}));
+
     if(timeslotes[0].start < "08:00" || timeslotes[0].end > "13:00")
         return res.status(422).json(validation({message:"Le temps de consultation doit etre 8h et 13h"}));
+
     try {
         user = await User.findById(req.user.id).select("-password");
         if (!user)
