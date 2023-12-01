@@ -10,7 +10,7 @@ const doctorschema = new mongoose.Schema({
     nom : {
         type: 'String',
         default: null,
-        required: true,
+        required: true,     
         maxlength: 255,
     },
     genre : {
