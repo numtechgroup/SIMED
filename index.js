@@ -8,10 +8,23 @@ const { API_PORT } = process.env
 
 app.use(express.json({ extended: false }));
 app.use(cors({
-    origin: true,
+    origin: `*`,
     credentials: true,
     methods: 'POST,GET,PUT,OPTIONS,DELETE' 
 }));
+app.options('https://localhost:4200', cors());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
+    return res.status(200).json({});
+  }
+  next();
+});
 connectToMongo();
 
 app.use("/api/auth", require("./routes/api/auth"));

@@ -10,20 +10,39 @@ exports.createDisponibility = async(req, res) =>{
     const errors = validationResult(req);
     if(!errors.isEmpty())
       return res.status(422).json(validation(errors.array()));
-    const { date, timeslotes } = req.body;  
 
-    const existDate = await Disponibility.findOne({date: date});
+    const {titre, startDate, endDate } = req.body;  
+
+    const startDateWithoutTime = new Date(startDate);
+    startDateWithoutTime.setUTCHours(0, 0, 0, 0); // Set time to midnight
+    
+    const endDateWithoutTime = new Date(endDate);
+    endDateWithoutTime.setUTCHours(0, 0, 0, 0); // Set time to midnight
+    
+    const existDate = await Disponibility.findOne({
+      startDate: {
+        $gte: startDateWithoutTime,
+        $lt: new Date(endDateWithoutTime.getTime() + 24 * 60 * 60 * 1000),
+      },
+      doctor: req.user.id, // Ajout de la condition pour le médecin actuel
+    });
 
     if(existDate)
-      return res.status(422).json(validation({message:"Vous avez deja programmé pour ce jour, choisissez une autre !"}));
+      return res.status(422).json(validation({message:"Vous avez deja programmé pour ce jour, choisissez une autre date !"}));
 
-    if(!date || !timeslotes[0].start || !timeslotes[0].end)
+    if(!startDate || !endDate)
         return res.status(422).json(validation({message:"Date and/or time are required"}));
 
-    if(timeslotes[0].start > timeslotes[0].end)
+    if (startDateWithoutTime > endDateWithoutTime)
+        return res.status(422).json(validation({ message: "La date de fin consultation ne peut être avant celle de début" }));
+
+    const startTime = new Date(startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const endTime = new Date(endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if(startTime > endTime)
         return res.status(422).json(validation({message:"Le temps de fin consultation ne peut etre avant celui de debut"}));
 
-    if(timeslotes[0].start < "08:00" || timeslotes[0].end > "13:00")
+    if(startTime < "08:00" || endTime > "13:00")
         return res.status(422).json(validation({message:"Le temps de consultation doit etre 8h et 13h"}));
 
     try {
@@ -35,8 +54,9 @@ exports.createDisponibility = async(req, res) =>{
             return res.status(403).json(error("Accès non autorisé", res.statusCode));
         }else{
             let disponibility = new Disponibility({
-                date: date,
-                timeslotes: timeslotes,
+                titre: titre,
+                start: startDate,
+                end: endDate,
                 doctor: user
             })
             await disponibility.save();
@@ -61,7 +81,7 @@ exports.getAllDisponibilities = async function (req, res) {
         return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
       else{
             let disponibilities = await Disponibility.find({doctor: user});
-            return res.status(200).json(success("Liste de mes disponibilités",{disponibilities}, res.statusCode));
+            return res.status(200).json(disponibilities);
         }
         
     }catch (err) {
@@ -69,3 +89,15 @@ exports.getAllDisponibilities = async function (req, res) {
       res.status(500).json(error("Erreur serveur interne", res.statusCode));
     }
 };
+
+exports.deleteEvent = async (req, res) => {
+  const { id } = req.params;
+
+  const existDispo = await Disponibility.findById(id);
+
+  if (!existDispo) return res.status(404).send(`No event with id: ${id}`);
+
+  await Disponibility.findByIdAndRemove(id);
+
+  res.json({ message: "Event deleted successfully." });
+}
