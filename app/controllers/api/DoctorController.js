@@ -1,10 +1,9 @@
-const {success, error, validation } = require('../../helpers/responseApi');
+const {success, error } = require('../../helpers/responseApi');
+const disponibility = require('../../models/disponibility');
 require('../../helpers/common');
-const { validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+require('express-validator');
 const User = require('../../models/user');
-const Doctor = require('../../models/doctor');
+
 
 
 exports.getDoctors = async(req, res) => {
@@ -17,7 +16,7 @@ exports.getDoctors = async(req, res) => {
         if(user.role != "patient"){
             return res.status(403).json(error("Accès non autorisé", res.statusCode));
         }else{
-            let doctors = await Doctor.find({});
+            let doctors = await User.find({role:'docteur'});
             return res.status(200).json(doctors);
         }
     }
@@ -27,3 +26,15 @@ exports.getDoctors = async(req, res) => {
       res.status(500).json(error("Erreur serveur interne", res.statusCode));
     }
 };
+
+exports.getStatisticsOfDoctors = async(req, res) => {
+    const nbDoctors = await User.countDocuments({role: 'docteur'});
+    const dispos = await disponibility.countDocuments({});
+    try {
+      return res.status(200).json({"doctors":nbDoctors, "dispos":dispos});
+    } catch (error) {
+      console.error(err.message);
+      res.status(500).json(error("Erreur serveur interne", res.statusCode));
+    }
+};
+

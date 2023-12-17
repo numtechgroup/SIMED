@@ -1,85 +1,100 @@
+const Disponibility = require('../../models/disponibility')
+const User = require('../../models/user')  
+const Appointment = require('../../models/appointment');
+const { validation, error, success } = require('../../helpers/responseApi');
+const { validationResult } = require('express-validator');
 
-const Doctor = require('../../models/doctor')
-const Appointment = require('../../models/appointment')
 
 
 
 exports.createAppointment = async(req, res) =>{
+    const errors = validationResult(req);
+    if(!errors.isEmpty())
+      return res.status(422).json(validation(errors.array()));
 
+    let user;
     try{
-// Debut de verification du doctor
-        const {date, time, patient, doctor} = req.body
-        const doctors = await Doctor.findById(doctor)
-        if (!doctors) {
-            return res.status(400).json({
-                message: "doctor introuvable "})
-        }
-//Fin de verification du doctor
-//Debut de verification de la date 
-        let statu = false
-        for (let i = 0; i < doctors.availability.length; i++) {
-            if (doctors.availability[i].date == date) {
-                statu = true
-            }
-        }
-        if (!statu) {
-            return res.status(400).json({message: "Le doctor n'est pas disponible a cette date "})
-        }
-        // return (statu)?res.status(200).json({message: "Le doctor est dispo a cette date "}): res.status(400).json({message: "Le doctor n'est pas dispo dans cette date "})
-//Fin de verification de la date dans le rendez-vous
-// Debut de verification de l'heure
-        statu = false
-        for (let i = 0; i < doctors.availability.length; i++) {
-            for (let j = 0; j <doctors.availability[i].timeslotes.length ; j++) {
-                if (parseInt(doctors.availability[i].timeslotes[j].start.split(':')[0]) <= parseInt(time) && parseInt(doctors.availability[i].timeslotes[j].end.split(':')[0]) > parseInt(time)) {
-                    statu = true
-                }
-            }  
-        }
-        if (!statu) {
-            return res.status(404).json({message: "Le medcin n'est pas disponible a cette heure "})
-        }
-        // return (statu)? res.status(200).json({message: "Le medcin est disponible a cette heur"}):res.status(404).json({message: "Le medcin n'est pas dispo a cette heure "})
-// Fin de verification de l'heure 
+        const {date, doctorId, timeAppointment} = req.body;
 
-// RDV Ok 
-// Enrigistrement du RDV
-        
-        const nbAppointments = await Appointment.countDocuments({time: time})
-        let hourAppointment = ""
-        if (parseInt(nbAppointments) == 0) {
-            hourAppointment = time+"H-"+time+"H30"
-            //return res.status(200).json({message: "Le premier qu'on doit enrigistrer"})
+        if (!doctorId) {
+            return res.status(400).json(error("L'ID du docteur est requis pour créer un rendez-vous"));
         }
-        if (parseInt(nbAppointments) ==1) {
-            hourAppointment = time+"H30-"+(parseInt(time)+1)+"H"
+
+        const doctor = await User.findById(doctorId);
+        console.log('doc',doctor);
+        if (doctor.role != 'docteur') {
+            return res.status(400).json(error("Cet utilisateur n'est pas un docteur"));
         }
-        if (parseInt(nbAppointments) >= 2) {
-            // return res.status(400).json({message: "merci"})
-            return res.status(404).json({message: "L'heure choisi est deja prise par d'autre patient veuillez choisir d'autre heure de rendez-vous "})
+
+        if (!doctor) {
+            return res.status(400).json(error("Ce docteur est introuvable"));
         }
-        const newppointment = new Appointment({
-            date: date,
-            time: time,
-            patient: patient,
-            doctor: doctor,
-            timeAppointment: hourAppointment,
-        })
-        const savedAppointment = await newppointment.save()
-        if (!savedAppointment) {
-            return res.status(500).json({message: "Une erreure s'est produite lors de l'enrigistrement du rendez-vous "})
+
+        const dispo = await Disponibility.find({doctor:doctorId,
+            start: { $gte: new Date(date) },
+            end: { $lt: new Date(date).setDate(new Date(date).getDate() + 1) }
+        });
+        console.log('dispos', dispo);
+
+        if (dispo.length === 0) {
+            return res.status(400).json(error("Il n'y a pas de RV disponible pour ce docteur", res.statusCode));
+        }
+
+        // Check if the provided date matches the available date
+        const dispoStartDate = new Date(dispo[0].start);
+        console.log('dispo date',dispoStartDate);
+        const requestDate = new Date(date);
+        console.log('request date',requestDate);
+
+        const formattedDispoStartDate = dispoStartDate.toISOString().split('T')[0];
+        console.log('formattedDispoStartDate', formattedDispoStartDate);
+        const formattedRequestDate = requestDate.toISOString().split('T')[0];
+        console.log('formattedRequestDate', formattedRequestDate);
+
+        if (formattedDispoStartDate !== formattedRequestDate) {
+            return res.status(400).json(error("Le docteur n'est pas disponible à cette date", res.statusCode));
+        }
+
+        const appointment = await Appointment.findOne({date:formattedRequestDate, doctorId: doctorId});
+
+        if(appointment){
+            return res.status(400).json(error("Vous avez deja programmé un RV pour ce jour !", res.statusCode));
         }
         
-        return res.status(201).json({message: "Votre rendez-vous est fixe le "+date+ " entre "+hourAppointment+" avec le doctor "+doctors.firstName+". Veuillez respecter l'heure de rendez-vous svp!!!"})
+        const startTime = new Date(dispo[0].start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endTime = new Date(dispo[0].end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
+
+        if(timeAppointment < startTime || timeAppointment > endTime)
+            return res.status(404).json(error("Le médecin n'est pas disponible à cet heure, choisssez entre "+ startTime+" et "+endTime));
+        
+        user = await User.findById(req.user.id).select("-password");
+        if (!user)
+        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
+      else{
+        if(user.role != "patient"){
+            return res.status(403).json(error("Accès non autorisé, vous n'etes pas patient", res.statusCode));
+        }else{
+            let newppointment = new Appointment({
+                date: date,
+                patient: user,
+                doctorId: doctorId,
+                timeAppointment: timeAppointment,
+            });
+            await newppointment.save();
+            return res.status(200).json(
+                success("Votre rendez-vous est fixe le "+date+ " à "+ timeAppointment +" avec le docteur "+doctor.prenom+ " " +doctor.nom +". Veuillez respecter l'heure de rendez-vous svp!!!", 
+                { newppointment }, res.statusCode
+            ));
+        }
+    }
     }catch(err){
-        return res.status(500).json({
-            message: err.message
-        })
+        console.error(err.message);
+        res.status(500).json(error("Erreur interne serveur", res.statusCode));
     }
 }
 
-exports.allAppointments = async (req, res) => {
+exports.getAllAppointments = async (req, res) => {
     try {
         const appointments = await Appointment.find();
         
@@ -95,10 +110,9 @@ exports.allAppointments = async (req, res) => {
     }
 }
 
-// Supprimer un appointment via son _id 
 exports.deleteAppointmentById = async (req, res) =>{
     try{
-        deleteAppointment = await Appointment.findByIdAndRemove(req.params.id)
+        deleteAppointment = await Appointment.findByIdAndRemove(req.params.id);
         if (!deleteAppointment) {
             res.status(404).json({message: "Rendez-vous introuvé"})
         }
@@ -112,7 +126,7 @@ exports.getAppointmentById = async (req, res)=>{
     try {
         const appointment = await Appointment.findById(req.params.id)
         if (!appointment) {
-            return res.status(404).json({message: "Rendez-vous introuvé "})
+            return res.status(404).json({message: "Rendez-vous non trouvé "})
         }
         return res.status(200).json(appointment)
     } catch (error) {
