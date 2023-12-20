@@ -3,7 +3,7 @@ require('../../helpers/common');
 const { validationResult } = require('express-validator');
 const User = require('../../models/user');
 const Patient = require('../../models/patient');
-const Appointment = require('../../models/appointment');
+const disponibility = require('../../models/disponibility');
 
 
 exports.getPatients = async(req, res) => {
@@ -28,12 +28,18 @@ exports.getPatients = async(req, res) => {
 };
 
 exports.getStatisticsOfPatients = async(req, res) => {
-  const nbPatients = await User.countDocuments({role: 'patient'});
-  const appointments = await Appointment.countDocuments({});
   try {
-    return res.status(200).json({"patients":nbPatients, "appointments":appointments});
-  } catch (error) {
-    console.error(err.message);
-    res.status(500).json(error("Erreur serveur interne", res.statusCode));
-  }
+    const nbPatients = await User.countDocuments({role: 'patient'});
+    const user = await User.findById(req.user.id).select("-password");
+    if(!user) 
+       return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
+     else{
+       const dispos = await disponibility.countDocuments({doctor: user});
+       return res.status(200).json({"patients":nbPatients, "dispos":dispos});
+     }
+
+   } catch (error) {
+     console.error(err.message);
+     res.status(500).json(error("Erreur serveur interne", res.statusCode));
+   }
 };
