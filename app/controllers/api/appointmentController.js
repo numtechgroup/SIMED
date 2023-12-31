@@ -5,8 +5,6 @@ const { validation, error, success } = require('../../helpers/responseApi');
 const { validationResult } = require('express-validator');
 
 
-
-
 exports.createAppointment = async(req, res) =>{
     const errors = validationResult(req);
     if(!errors.isEmpty())
@@ -92,7 +90,7 @@ exports.createAppointment = async(req, res) =>{
         console.error(err.message);
         res.status(500).json(error("Erreur interne serveur", res.statusCode));
     }
-}
+};
 
 exports.getAllAppointments = async (req, res) => {
     try {
@@ -108,28 +106,49 @@ exports.getAllAppointments = async (req, res) => {
             message: err.message
         });
     }
-}
+};
 
 exports.deleteAppointmentById = async (req, res) =>{
     try{
-        deleteAppointment = await Appointment.findByIdAndRemove(req.params.id);
-        if (!deleteAppointment) {
-            res.status(404).json({message: "Rendez-vous introuvé"})
+
+        const user = await User.findById(req.user.id).select("-password");
+  
+      if (!user)
+        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
+      else{
+        if(user.role != "patient"){
+            return res.status(403).json(error("Accès non autorisé", res.statusCode));
+        }else{
+           const deleteAppointment = await Appointment.findByIdAndRemove(req.params.id);
+            if (!deleteAppointment) {
+                res.status(404).json({message: "Rendez-vous introuvé"})
+            }
+            return res.status(200).json({message: "Rendez-vous supprimé avec succés !!!"})
+          }
         }
-        return res.status(200).json({message: "Rendez-vous supprimé avec succés !!!"})
     }catch(err){
         return res.status(500).json({message: err.message})
     }
-}
+};
 
 exports.getAppointmentById = async (req, res)=>{
     try {
-        const appointment = await Appointment.findById(req.params.id)
+        const user = await User.findById(req.user.id).select("-password");
+  
+      if (!user)
+        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
+      else{
+        if(user.role != "patient"){
+            return res.status(403).json(error("Accès non autorisé", res.statusCode));
+        }else{
+            const appointment = await Appointment.findById(req.params.id)
         if (!appointment) {
             return res.status(404).json({message: "Rendez-vous non trouvé "})
         }
         return res.status(200).json(appointment)
+        }
+      }
     } catch (error) {
         
     }
-}
+};

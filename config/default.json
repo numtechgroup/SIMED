@@ -3,5 +3,7 @@
     "emailPassword":"mype xtcn zuen isie",
     "frontendUrl":"http://localhost:4200",
     "jwtSecret": "HelloWeAreATeamAtSenegaLEADINDEV221",
-    "jwtResetSecret": "PasswordResetWithAGoodDeaal"
+    "jwtResetSecret": "PasswordResetWithAGoodDeaal",
+    "database":"files",
+    "imgBucket":"images"
 }

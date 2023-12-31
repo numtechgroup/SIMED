@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { getDoctors, getNumberOfDoctors, getStatisticsOfDoctors } = require("../../app/controllers/api/DoctorController");
+const { createDossierOphtalmo, getAllDossiers, deleteDossierById, getDossierById, uploadFiless } = require("../../app/controllers/api/DossierController");
 const { getPatients, getStatisticsOfPatients } = require("../../app/controllers/api/PatientController");
 const { getUsers } = require("../../app/controllers/api/UserController");
 const { createAppointment, getAllAppointments, deleteAppointmentById, getAppointmentById } = require("../../app/controllers/api/appointmentController");
@@ -17,6 +18,17 @@ router.get('/doctor/disponibilities', authDoctor, getAllDisponibilities);
 router.delete('/doctor/disponibility/delete/:id',authDoctor, deleteEvent);
 
 router.get('/doctors/statistics', authPatient, getStatisticsOfDoctors)
+
+router.post('/doctor/createDossier', authDoctor, createDossierOphtalmo);
+
+
+router.get('/doctor/dossiers/all', authDoctor, getAllDossiers)
+
+router.get('/doctor/dossier/:id',authDoctor, getDossierById);
+
+router.delete('/doctor/dossier/delete/:id',authDoctor, deleteDossierById);
+
+
 
 
 //patients

@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const User = require('../../models/user');
 const Patient = require('../../models/patient');
 const disponibility = require('../../models/disponibility');
+const Dossier = require('../../models/Dossier');
 
 
 exports.getPatients = async(req, res) => {
@@ -35,7 +36,8 @@ exports.getStatisticsOfPatients = async(req, res) => {
        return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
      else{
        const dispos = await disponibility.countDocuments({doctor: user});
-       return res.status(200).json({"patients":nbPatients, "dispos":dispos});
+       const dossiers = await Dossier.countDocuments({});
+       return res.status(200).json({"patients":nbPatients, "dispos":dispos, "dossiers":dossiers});
      }
 
    } catch (error) {
