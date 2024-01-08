@@ -1,13 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose= require('mongoose');
 
 const dossierSchema = mongoose.Schema({
     identification:{
         patient :{
-		type: mongoose.Schema.Types.ObjectId,
-		ref: 'Patient',
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Patient',
+            default: null,
+            required:false
         },
         profession :{
             type:String,
+            default:null
         },
         numeroDossier :{
             type:String,
@@ -64,8 +67,7 @@ const dossierSchema = mongoose.Schema({
           familiaux: {
             maladiesGenetiques:{
                 type : String,
-        default: null
-
+                default: null
             } ,
             typeMaladieGenetique: {
                 type : String,
@@ -82,8 +84,7 @@ const dossierSchema = mongoose.Schema({
             },
             ametropies: {
                 type : String,
-        default: null
-
+                default: null
             },
           },
         },
@@ -92,87 +93,72 @@ const dossierSchema = mongoose.Schema({
         avlsc: { 
             oeilDroit: {
                 type: String,
-        default: null
-
+                default: null
             },
              oeilGauche: {
                 type: String,
-        default: null
-
+                default: null
             } 
         },
       avlac: {
         oeilDroit: {
             type: String,
-        default: null
-
+            default: null
         },
         oeilGauche: {
             type: String,
-        default: null
-
+            default: null
         }
     },
       avp: {
         oeilDroit: {
             type: String,
-        default: null
-
+            default: null
         }, 
         oeilGauche:{
             type: String,
-        default: null
-
+            default: null
         }
     },
       refraction: {
          oeilDroit: {
             type: String,
-        default: null
-
+            default: null
         },
        oeilGauche: {
         type: String,
         default: null
-
         }
      },
       skiascopie: {
          oeilDroit: {
             type: String,
-        default: null
-
+            default: null
         },
        oeilGauche: {
         type: String,
         default: null
-
         }
      },
       annexes: {
         type: String,
         default: null
-
       },
     segmentAnterieur: {
         type: String,
         default: null
-
     },
     tonusOculaire: {
         type: String,
         default: null
-
     },
     fondOeil: {
         type: String,
         default: null
-
     },
     hypotheseDiagnostic: {
         type: String,
         default: null
-
 },
     conduiteATenir: {
         type: String,
@@ -213,17 +199,14 @@ const dossierSchema = mongoose.Schema({
     GAJ: {
         type: String, 
         default: null
-
     },
     Hba1c: {
         type: String,
         default: null
-
     },
     NFS: {
         type: String, 
         default: null
-
     },
     TP: {
         type: String, 
@@ -232,7 +215,6 @@ const dossierSchema = mongoose.Schema({
     TCK: {
         type: String, 
         default: null
-
     },
     creatinine: {
         type: String, 
@@ -255,4 +237,8 @@ const dossierSchema = mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('Dossier', dossierSchema);
+dossierSchema.index({ 'identification.patient': 1 }, { unique: true });
+
+const Dossier = mongoose.model('Dossier', dossierSchema);
+
+module.exports = Dossier;

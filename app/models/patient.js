@@ -31,20 +31,20 @@ const patientSchema = new mongoose.Schema({
     },
     email : {
         type: 'String',
-        required: true,
+        required: false,
         unique: true,
         minlength: 5,
         maxlength: 255,
-        validate: {
-            validator: function (v) {
-                return v !== null;
-            },
-            message: 'Email is required and cannot be null.',
-        },
+        // validate: {
+        //     validator: function (v) {
+        //         return v !== null;
+        //     },
+        //     message: 'Email is required and cannot be null.',
+        // },
     },
     password : {
         type: 'String',
-        required: true,
+        required: false,
         minlength: 5,
         maxlength: 255,
     },
@@ -56,7 +56,7 @@ const patientSchema = new mongoose.Schema({
     // },
     role : {
         type: 'String',
-        enum: ['patient', 'docteur','admin']
+        default: 'patient'
     },
     groupeSanguin: {
         type: String,
