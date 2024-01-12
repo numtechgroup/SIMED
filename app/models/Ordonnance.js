@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const ordonnanceSchema = mongoose.Schema({
+    nomOrdonnance:{
+      type: String,
+      required: false
+    },
     patient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Patient',
@@ -13,6 +17,11 @@ const ordonnanceSchema = mongoose.Schema({
     date: {
         type: Date,
         default: Date.now,
+    },
+    doctor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor',
+        required: true,
     },
 });
 

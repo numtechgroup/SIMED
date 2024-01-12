@@ -7,7 +7,7 @@ const { createAppointment, getAllAppointments, deleteAppointmentById, getAppoint
 const { createDisponibility, getAllDisponibilities, deleteEvent } = require("../../app/controllers/api/disponibilityController");
 
 const {authAdmin, authDoctor, authPatient } = require("../../app/middleware/auth")
-const {generateOrdonnance} = require("../../app/controllers/api/OrdonnanceController");
+const {generateOrdonnance, getAllOrdonnances, getOrdonnanceById, downloadOrdonnance, deleteOrdonnanceById} = require("../../app/controllers/api/OrdonnanceController");
 
 //doctors
 router.get('/doctors',authPatient,getDoctors);
@@ -24,19 +24,23 @@ router.get('/doctors/statistics', authPatient, getStatisticsOfDoctors)
 
 router.post('/doctor/createDossier', createDossierOphtalmo);
 
-router.post('/doctor/createOrdonnance', generateOrdonnance);
+router.post('/doctor/createOrdonnance',authDoctor, generateOrdonnance);
+
+router.get('/doctor/ordonnances',authDoctor, getAllOrdonnances);
+
+router.get('/doctor/ordonnance/:id',authDoctor, getOrdonnanceById);
+
+router.get('/doctor/ordonnance/download/:id',authDoctor, downloadOrdonnance);
+
+router.delete('/doctor/ordonnance/delete/:id',authDoctor, deleteOrdonnanceById);
 
 router.put('/doctor/dossier/update/:id', updateDossier);
-
-
 
 router.get('/doctor/dossiers/all', authDoctor, getAllDossiers)
 
 router.get('/doctor/dossier/:id',authDoctor, getDossierById);
 
 router.delete('/doctor/dossier/delete/:id',authDoctor, deleteDossierById);
-
-
 
 
 //patients

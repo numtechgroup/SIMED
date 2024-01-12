@@ -5,18 +5,16 @@ const fs = require('fs');
 
 async function generateOrdonnancePDF(ordonnanceDetails) {
     return new Promise((resolve, reject) => {
-        const pdfPath = `ordonnance_${new Date().toISOString()}.pdf`;
+        const pdfPath = `ordonnances/ordonnance_${new Date().toISOString()}.pdf`;
 
         const doc = new pdf();
         const writeStream = fs.createWriteStream(pdfPath);
 
-        // Handle write stream errors
         writeStream.on('error', (error) => {
             console.error('Error writing to PDF stream:', error);
             reject(`Error writing to PDF stream: ${error.message}`);
         });
 
-        // Handle PDF document errors
         doc.on('error', (error) => {
             console.error('Error during PDF document creation:', error);
             reject(`Error during PDF document creation: ${error.message}`);
