@@ -16,7 +16,7 @@ app.use(cors({
   methods: 'POST, GET, PUT, OPTIONS, DELETE',
   allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
 }));
-
+//test
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "https://simed-six.vercel.app");
   // res.header("Access-Control-Allow-Origin", "http://localhost:4200");
