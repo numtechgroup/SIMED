@@ -7,6 +7,7 @@ const disponibility = require('../../models/disponibility');
 const Dossier = require('../../models/Dossier');
 const bcrypt = require("bcryptjs");
 const Doctor = require("../../models/doctor");
+const ordonnance = require("../../models/Ordonnance");
 
 
 exports.createPatient = async (req, res) => {
@@ -113,7 +114,8 @@ exports.getStatisticsOfPatients = async(req, res) => {
      else{
        const dispos = await disponibility.countDocuments({doctor: user});
        const dossiers = await Dossier.countDocuments({});
-       return res.status(200).json({"patients":nbPatients, "dispos":dispos, "dossiers":dossiers});
+       const ordonnances = await ordonnance.countDocuments({doctor:user})
+        return res.status(200).json({"patients":nbPatients, "dispos":dispos, "dossiers":dossiers, "ordonnances":ordonnances});
      }
 
    } catch (error) {

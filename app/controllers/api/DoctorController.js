@@ -1,7 +1,7 @@
-const {success, error } = require('../../helpers/responseApi');
-const dossier = require('../../models/Dossier');
+const { error } = require('../../helpers/responseApi');
+require('../../models/Dossier');
 const appointment = require('../../models/appointment');
-const disponibility = require('../../models/disponibility');
+require('../../models/disponibility');
 require('../../helpers/common');
 require('express-validator');
 const User = require('../../models/user');
@@ -36,10 +36,9 @@ exports.getStatisticsOfDoctors = async(req, res) => {
      if(!user) 
         return res.status(404).json(error("Pas d'utilisateur trouvé", res.statusCode));
       else{
-        const dispos = await appointment.countDocuments({patient: user});        
+        const dispos = await appointment.countDocuments({patient: user});
         return res.status(200).json({"doctors":nbDoctors, "appointments":dispos});
       }
-
     } catch (error) {
       console.error(err.message);
       res.status(500).json(error("Erreur serveur interne", res.statusCode));
